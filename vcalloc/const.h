@@ -22,5 +22,5 @@ inline static size_t AlignUp(size_t x) { return (x + (kAlignSize - 1)) & ~(kAlig
 inline static size_t AlignDown(size_t x) { return x - (x & (kAlignSize - 1)); }
 
 inline static void* AlignPtr(const void* ptr) {
-	return (void*)((std::ptrdiff_t(ptr) + (kAlignSize - 1)) & ~(kAlignSize - 1));
+  return (void*)((std::ptrdiff_t(ptr) + (kAlignSize - 1)) & ~(kAlignSize - 1));
 }

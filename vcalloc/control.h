@@ -3,38 +3,38 @@
 #include "vcalloc/block.h"
 
 static void MappingInsert(size_t size, int* fli, int* sli) {
-	int fl, sl;
-	if (size < kSmallBlockSize) {
-		// Store small blocks in first list
-		fl = 0;
-		sl = (int)size / (kSmallBlockSize / kSLIndexCount);
-	} else {
-		fl = vcalloc_fls_sizet(size);
-		sl = (int)((size >> (fl - kSLIndexCountLog2)) ^ (1 << kSLIndexCountLog2));
-		fl -= (kFLIndexShift - 1);
-	}
-	*fli = fl;
-	*sli = sl;
+  int fl, sl;
+  if (size < kSmallBlockSize) {
+    // Store small blocks in first list
+    fl = 0;
+    sl = (int)size / (kSmallBlockSize / kSLIndexCount);
+  } else {
+    fl = vcalloc_fls_sizet(size);
+    sl = (int)((size >> (fl - kSLIndexCountLog2)) ^ (1 << kSLIndexCountLog2));
+    fl -= (kFLIndexShift - 1);
+  }
+  *fli = fl;
+  *sli = sl;
 }
 
 static void MappingSearch(size_t size, int* fli, int* sli) {
-	if (size >= kSmallBlockSize) {
-		const size_t round = (1 << (vcalloc_fls_sizet(size) - kSLIndexCountLog2)) - 1;
-		size += round;
-	}
-	MappingInsert(size, fli, sli);
+  if (size >= kSmallBlockSize) {
+    const size_t round = (1 << (vcalloc_fls_sizet(size) - kSLIndexCountLog2)) - 1;
+    size += round;
+  }
+  MappingInsert(size, fli, sli);
 }
 
 typedef struct ControlHeader {
-	// Empty lists point at this block to indicate they are free
-	BlockHeader block_null_;
+  // Empty lists point at this block to indicate they are free
+  BlockHeader block_null_;
 
-	// Bitmaps for free lists
-	unsigned int fl_bitmap_;
-	unsigned int sl_bitmap_[kFLIndexCount];
+  // Bitmaps for free lists
+  unsigned int fl_bitmap_;
+  unsigned int sl_bitmap_[kFLIndexCount];
 
-	// Head of free lists
-	BlockHeader* blocks_[kFLIndexCount][kSLIndexCount];
+  // Head of free lists
+  BlockHeader* blocks_[kFLIndexCount][kSLIndexCount];
 
   void Init() {
     block_null_.next_free_ = &block_null_;
@@ -88,7 +88,7 @@ typedef struct ControlHeader {
       fl = vcalloc_ffs(fl_map);
       *fli = fl;
       sl_map = sl_bitmap_[fl];
-	  }
+    }
     assert(sl_map && "internal error - second level bitmap is null");
     sl = vcalloc_ffs(sl_map);
     *sli = sl;

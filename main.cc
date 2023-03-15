@@ -73,8 +73,8 @@ void test_reuse() {
   int* a = new int;
   int* b = new int;
   int* c = new int[3];
-  std::cout << &a << std::endl;
-  std::cout << &b << std::endl;
+  std::cout << a << std::endl;
+  std::cout << b << std::endl;
   c[0] = 1;
   c[1] = 2;
   c[2] = 3;
