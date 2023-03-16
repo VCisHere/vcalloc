@@ -14,16 +14,16 @@ struct ControlHeader;
 struct BlockHeader;
 
 class vcalloc {
- private: 
-  ControlHeader* control_;
-  
-  void InitPool(void* mem, size_t size);
+private:
+  ControlHeader *control_;
 
- public:
-  vcalloc(void* mem, size_t size);
+  // void InitPool(void *mem, size_t size);
 
-  void* Malloc(size_t size);
-  void Free(void* ptr);
+public:
+  vcalloc(void *mem, size_t size);
+
+  void *Malloc(size_t size);
+  void Free(void *ptr);
 
   // for debug
   int Check();

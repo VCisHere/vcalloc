@@ -3,6 +3,8 @@
 #include "vcalloc/common.h"
 #include "vcalloc/const.h"
 
+#include <assert.h>
+
 constexpr size_t block_header_free_bit = 1 << 0;
 constexpr size_t block_header_prev_free_bit = 1 << 1;
 
@@ -99,8 +101,6 @@ typedef struct BlockHeader {
   }
 
 } BlockHeader;
-
-#include <iostream>
 
 static size_t AdjustRequestSize(size_t size) {
   if (VCCALLOC_unlikely(!size)) {

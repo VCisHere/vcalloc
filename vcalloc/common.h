@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #if defined(__cplusplus)
 #define VCALLOC_DECL inline
 #else
@@ -10,8 +12,8 @@
 ** Detect whether or not we are building for a 32- or 64-bit (LP/LLP)
 ** architecture. There is no reliable portable method at compile-time.
 */
-#if defined (__alpha__) || defined (__ia64__) || defined (__x86_64__) \
-  || defined (_WIN64) || defined (__LP64__) || defined (__LLP64__)
+#if defined(__alpha__) || defined(__ia64__) || defined(__x86_64__) ||          \
+    defined(_WIN64) || defined(__LP64__) || defined(__LLP64__)
 #define VCALLOC_64BIT
 #endif
 
@@ -19,10 +21,11 @@
 ** gcc 3.4 and above have builtin support, specialized for architecture.
 ** Some compilers masquerade as gcc; patchlevel test filters them out.
 */
-#if defined (__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)) \
-  && defined (__GNUC_PATCHLEVEL__)
+#if defined(__GNUC__) &&                                                       \
+    (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)) &&                \
+    defined(__GNUC_PATCHLEVEL__)
 
-#if defined (__SNC__)
+#if defined(__SNC__)
 /* SNC for Playstation 3. */
 
 VCALLOC_DECL int vcalloc_ffs(unsigned int word) {
@@ -44,7 +47,8 @@ VCALLOC_DECL int vcalloc_fls(unsigned int word) {
   return bit - 1;
 }
 
-#elif defined (_MSC_VER) && (_MSC_VER >= 1400) && (defined (_M_IX86) || defined (_M_X64))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1400) &&                               \
+    (defined(_M_IX86) || defined(_M_X64))
 /* Microsoft Visual C++ support on x86/X64 architectures. */
 
 #include <intrin.h>
@@ -62,7 +66,7 @@ VCALLOC_DECL int vcalloc_ffs(unsigned int word) {
   return _BitScanForward(&index, word) ? index : -1;
 }
 
-#elif defined (_MSC_VER) && defined (_M_PPC)
+#elif defined(_MSC_VER) && defined(_M_PPC)
 /* Microsoft Visual C++ support on PowerPC architectures. */
 
 #include <ppcintrinsics.h>
@@ -78,7 +82,7 @@ VCALLOC_DECL int vcalloc_ffs(unsigned int word) {
   return bit - 1;
 }
 
-#elif defined (__ARMCC_VERSION)
+#elif defined(__ARMCC_VERSION)
 /* RealView Compilation Tools for ARM */
 
 VCALLOC_DECL int vcalloc_ffs(unsigned int word) {
@@ -92,7 +96,7 @@ VCALLOC_DECL int vcalloc_fls(unsigned int word) {
   return bit - 1;
 }
 
-#elif defined (__ghs__)
+#elif defined(__ghs__)
 /* Green Hills support for PowerPC */
 
 #include <ppc_ghs.h>
@@ -114,12 +118,28 @@ VCALLOC_DECL int vcalloc_fls(unsigned int word) {
 VCALLOC_DECL int vcalloc_fls_generic(unsigned int word) {
   int bit = 32;
 
-  if (!word) bit -= 1;
-  if (!(word & 0xffff0000)) { word <<= 16; bit -= 16; }
-  if (!(word & 0xff000000)) { word <<= 8; bit -= 8; }
-  if (!(word & 0xf0000000)) { word <<= 4; bit -= 4; }
-  if (!(word & 0xc0000000)) { word <<= 2; bit -= 2; }
-  if (!(word & 0x80000000)) { word <<= 1; bit -= 1; }
+  if (!word)
+    bit -= 1;
+  if (!(word & 0xffff0000)) {
+    word <<= 16;
+    bit -= 16;
+  }
+  if (!(word & 0xff000000)) {
+    word <<= 8;
+    bit -= 8;
+  }
+  if (!(word & 0xf0000000)) {
+    word <<= 4;
+    bit -= 4;
+  }
+  if (!(word & 0xc0000000)) {
+    word <<= 2;
+    bit -= 2;
+  }
+  if (!(word & 0x80000000)) {
+    word <<= 1;
+    bit -= 1;
+  }
 
   return bit;
 }
@@ -136,18 +156,14 @@ VCALLOC_DECL int vcalloc_fls(unsigned int word) {
 #endif
 
 // Possibly 64-bit version of vcalloc_fls
-#if defined (VCALLOC_64BIT)
+#if defined(VCALLOC_64BIT)
 VCALLOC_DECL int vcalloc_fls_sizet(size_t size) {
   int high = (int)(size >> 32);
   int bits = 0;
-  if (high)
-  {
+  if (high) {
     bits = 32 + vcalloc_fls(high);
-  }
-  else
-  {
+  } else {
     bits = vcalloc_fls((int)size & 0xffffffff);
-
   }
   return bits;
 }
@@ -158,12 +174,10 @@ VCALLOC_DECL int vcalloc_fls_sizet(size_t size) {
 #undef VCALLOC_DECL
 
 #ifndef VCCALLOC_likely
-#define VCCALLOC_likely(x) \
-  (__builtin_expect(!!(x), 1))
+#define VCCALLOC_likely(x) (__builtin_expect(!!(x), 1))
 #endif
 #ifndef VCCALLOC_unlikely
-#define VCCALLOC_unlikely(x) \
-  (__builtin_expect(!!(x), 0))
+#define VCCALLOC_unlikely(x) (__builtin_expect(!!(x), 0))
 #endif
 
 #define Min(a, b) ((a) < (b) ? (a) : (b))
