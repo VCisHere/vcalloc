@@ -29,7 +29,7 @@ typedef struct BlockHeader {
   };
 
   static size_t MinSize() {
-    return sizeof(BlockHeader) - sizeof(BlockHeader *);
+    return sizeof(BlockHeader) - sizeof(struct BlockHeader *);
   }
 
   static size_t MaxSize() { return size_t(1) << kFLIndexMax; }
