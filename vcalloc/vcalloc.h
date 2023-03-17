@@ -17,8 +17,6 @@ class vcalloc {
 private:
   ControlHeader *control_;
 
-  // void InitPool(void *mem, size_t size);
-
 public:
   vcalloc(void *mem, size_t size);
 

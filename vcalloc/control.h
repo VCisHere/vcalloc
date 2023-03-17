@@ -106,7 +106,6 @@ typedef struct ControlHeader {
     used_size_ = BlockHeader::Overhead();
     max_size_ = pool_size;
 #endif
-
   }
 
   // Insert a given block into the free list

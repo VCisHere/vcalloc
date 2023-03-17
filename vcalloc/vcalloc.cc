@@ -5,48 +5,6 @@
 #define VCMALLOC
 #define VCMALLOC_DEBUG
 
-// void vcalloc::InitPool(void *mem, size_t size) {
-//   CheckMem(mem);
-
-//   BlockHeader *block;
-//   BlockHeader *next;
-
-//   const size_t pool_overhead = 2 * BlockHeader::Overhead();
-//   const size_t pool_size = AlignDown(size - pool_overhead);
-
-//   if (pool_size < BlockHeader::MinSize() ||
-//       pool_size > BlockHeader::MaxSize()) {
-// #if defined(VCALLOC_64BIT)
-//     printf("InitPool: Memory size must be between 0x%x and 0x%x00 bytes.\n",
-//            (unsigned int)(pool_overhead + BlockHeader::MinSize()),
-//            (unsigned int)((pool_overhead + BlockHeader::MaxSize()) / 256));
-// #else
-//     printf("InitPool: Memory size must be between %u and %u bytes.\n",
-//            (unsigned int)(pool_overhead + BlockHeader::MinSize()),
-//            (unsigned int)(pool_overhead + BlockHeader::MaxSize()));
-// #endif
-//     return;
-//   }
-
-//   /*
-//   ** Create the main free block. Offset the start of the block slightly
-//   ** so that the prev_phys_block field falls outside of the pool -
-//   ** it will never be used.
-//   */
-//   block = reinterpret_cast<BlockHeader *>(std::ptrdiff_t(mem) -
-//                                           BlockHeader::Overhead());
-//   block->SetSize(pool_size);
-//   block->SetFree();
-//   block->SetPrevUsed();
-//   control_->InsertBlock(block);
-
-//   // Split the block to create a zero-size sentinel block
-//   next = block->LinkNext();
-//   next->SetSize(0);
-//   next->SetUsed();
-//   next->SetPrevFree();
-// }
-
 vcalloc::vcalloc(void *mem, size_t size) {
   CheckMem(mem);
   control_ = reinterpret_cast<ControlHeader *>(mem);
