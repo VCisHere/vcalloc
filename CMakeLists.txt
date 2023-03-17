@@ -17,6 +17,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 project(vcalloc-test C CXX)
 
+add_compile_definitions(VCALLOC_MULTI_THREAD)
+
 add_executable(vcalloc-test
     "./vcalloc/vcalloc.cc"
     "./main.cc"

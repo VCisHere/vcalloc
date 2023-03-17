@@ -4,6 +4,7 @@
 #include "vcalloc/const.h"
 
 #include <assert.h>
+#include <thread>
 
 constexpr size_t block_header_free_bit = 1 << 0;
 constexpr size_t block_header_prev_free_bit = 1 << 1;
@@ -12,6 +13,10 @@ typedef struct BlockHeader {
   // Points to the previous physical block
   // 该字段不在本内存块内，实际在物理地址相邻的前一个节点末尾
   struct BlockHeader *prev_phys_block_;
+
+#if defined(VCALLOC_MULTI_THREAD)
+  std::thread::id tid_;
+#endif
 
   // The size of this block, excluding the block header
   size_t size_;
@@ -22,7 +27,13 @@ typedef struct BlockHeader {
   struct BlockHeader *next_free_;
   struct BlockHeader *prev_free_;
 
-  static size_t Overhead() { return sizeof(size_t); }
+  static size_t Overhead() {
+#if defined(VCALLOC_MULTI_THREAD)
+    return sizeof(size_t) + sizeof(std::thread::id);
+#else
+    return sizeof(size_t);
+#endif
+  }
 
   static size_t StartOffset() {
     return offsetof(BlockHeader, size_) + sizeof(size_t);

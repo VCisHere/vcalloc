@@ -13,12 +13,22 @@
 struct ControlHeader;
 struct BlockHeader;
 
+#define VCALLOC
+#define VCALLOC_DEBUG
+
+#define VCALLOC_MEM_SIZE 1024 * 1024
+#if defined(VCALLOC_MULTI_THREAD)
+#define VCALLOC_POOL_COUNT 4
+#else
+#define VCALLOC_POOL_COUNT 1
+#endif
+
 class vcalloc {
 private:
-  ControlHeader *control_;
+  ControlHeader *controls_[VCALLOC_POOL_COUNT];
 
 public:
-  vcalloc(void *mem, size_t size);
+  vcalloc(size_t size);
 
   void *Malloc(size_t size);
   void Free(void *ptr);

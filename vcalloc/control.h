@@ -37,7 +37,7 @@ typedef struct ControlHeader {
   BlockHeader block_null_;
 
   // Statistic
-#ifdef VCALLOC_STATISTIC
+#if defined(VCALLOC_STATISTIC)
   size_t used_size_;
   size_t max_size_;
 #endif
@@ -102,7 +102,7 @@ typedef struct ControlHeader {
     next->SetUsed();
     next->SetPrevFree();
 
-#ifdef VCALLOC_STATISTIC
+#if defined(VCALLOC_STATISTIC)
     used_size_ = BlockHeader::Overhead();
     max_size_ = pool_size;
 #endif
@@ -122,7 +122,7 @@ typedef struct ControlHeader {
     assert(block->ToPtr() == AlignPtr(block->ToPtr()) &&
            "block not aligned properly");
 
-#ifdef VCALLOC_STATISTIC
+#if defined(VCALLOC_STATISTIC)
     used_size_ -= (block->Size() + BlockHeader::Overhead());
 #endif
 
@@ -203,7 +203,7 @@ typedef struct ControlHeader {
       }
     }
 
-#ifdef VCALLOC_STATISTIC
+#if defined(VCALLOC_STATISTIC)
     used_size_ += (block->Size() + BlockHeader::Overhead());
 #endif
   }
@@ -217,6 +217,19 @@ typedef struct ControlHeader {
     block->MarkAsUsed();
     return block->ToPtr();
   }
+
+#if defined (VCALLOC_MULTI_THREAD)
+  void *BlockPrepareUsed(BlockHeader *block, std::thread::id tid, size_t size) {
+    if (!block) {
+      return 0;
+    }
+    assert(size && "size must be non-zero");
+    BlockTrimFree(block, size);
+    block->MarkAsUsed();
+    block->tid_ = tid;
+    return block->ToPtr();
+  }
+#endif
 
   // Trim any trailing block space off the end of a block, return to pool
   void BlockTrimFree(BlockHeader *block, size_t size) {
