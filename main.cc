@@ -1,17 +1,19 @@
 // #include "tlsf.h"
 // #include "vcalloc/vcalloc.h"
 
-#include <memory>
-#include <iostream>
-#include <stdio.h>
-#include <random>
 #include <chrono>
+#include <iostream>
+#include <memory>
+#include <random>
+#include <stdio.h>
 
 size_t static random_size() {
   static std::random_device dev;
   static std::mt19937 rng(dev());
-  // static std::uniform_int_distribution<std::mt19937::result_type> dist(1024, 8 * 1024);
-  static std::uniform_int_distribution<std::mt19937::result_type> dist(100, 400);
+  // static std::uniform_int_distribution<std::mt19937::result_type> dist(1024,
+  // 8 * 1024);
+  static std::uniform_int_distribution<std::mt19937::result_type> dist(100,
+                                                                       400);
   return dist(rng);
 }
 
@@ -36,13 +38,13 @@ size_t static random_size() {
 void test_new_delete() {
   for (int k = 0; k < 10000000; k++) {
     int *ptr = new int[random_size()];
-    delete []ptr;
+    delete[] ptr;
   }
 }
 
 const int a = 1000;
 const int b = 10;
-int* ptr[a][b];
+int *ptr[a][b];
 
 void test_write_read() {
   for (int i = 0; i < a; i++) {
@@ -70,9 +72,9 @@ void test_write_read() {
 }
 
 void test_reuse() {
-  int* a = new int;
-  int* b = new int;
-  int* c = new int[3];
+  int *a = new int;
+  int *b = new int;
+  int *c = new int[3];
   std::cout << a << std::endl;
   std::cout << b << std::endl;
   c[0] = 1;
@@ -84,7 +86,7 @@ void test_reuse() {
   std::cout << &c[2] << " " << c[2] << std::endl;
   delete[] c;
 
-  int* d = new int[3];
+  int *d = new int[3];
   d[0] = 4;
   d[1] = 5;
   d[2] = 6;
@@ -98,11 +100,11 @@ void test_reuse() {
 }
 
 int main() {
-  using std::chrono::high_resolution_clock;
-  using std::chrono::duration_cast;
   using std::chrono::duration;
-  using std::chrono::milliseconds;
+  using std::chrono::duration_cast;
+  using std::chrono::high_resolution_clock;
   using std::chrono::microseconds;
+  using std::chrono::milliseconds;
   using std::chrono::nanoseconds;
 
   // std::cout << sizeof(size_t) << std::endl; // 8
@@ -112,10 +114,9 @@ int main() {
 
   auto t1 = high_resolution_clock::now();
   // test_new_delete();
-  // test_write_read();
-  test_reuse();
+  test_write_read();
+  // test_reuse();
   auto t2 = high_resolution_clock::now();
   auto t = duration_cast<microseconds>(t2 - t1);
   std::cout << t.count() << "us\n";
-  
 }

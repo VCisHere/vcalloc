@@ -91,8 +91,8 @@ typedef struct BlockHeader {
   }
 
   BlockHeader *Next() const {
-    BlockHeader *next =
-        (BlockHeader *)(std::ptrdiff_t(ToPtr()) + Size() - Overhead());
+    BlockHeader *next = reinterpret_cast<BlockHeader *>(
+        std::ptrdiff_t(ToPtr()) + Size() - sizeof(BlockHeader *));
     assert(!IsLast());
     return next;
   }
@@ -109,7 +109,7 @@ typedef struct BlockHeader {
   BlockHeader *Split(size_t size) {
     // Calculate the amount of space left in the remaining block
     BlockHeader *remaining = reinterpret_cast<BlockHeader *>(
-        std::ptrdiff_t(ToPtr()) + size - Overhead());
+        std::ptrdiff_t(ToPtr()) + size - sizeof(BlockHeader *));
     const size_t remain_size = Size() - (size + Overhead());
 
     assert(remaining->ToPtr() == AlignPtr(remaining->ToPtr()) &&

@@ -142,11 +142,9 @@ void vcalloc::Walk() {
     printf("used: %zu, max: %zu\n", controls_[i]->used_size_,
            controls_[i]->max_size_);
     while (block && !block->IsLast()) {
-      std::cout << block->IsLast() << " " << block->Size() << std::endl;
       default_walker(block->ToPtr(), block->Size(), !block->IsFree());
       block = block->Next();
     }
-    std::cout << block->IsLast() << " " << block->Size() << std::endl;
     printf("\n");
   }
 }
