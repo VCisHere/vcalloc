@@ -30,7 +30,6 @@ vcalloc::vcalloc(size_t size) {
   CheckMem(mem);
 
   size_t splitted_size = AlignDown(size / VCALLOC_POOL_COUNT);
-  std::cout << "splitted_size: " << splitted_size << std::endl;
   std::ptrdiff_t control_mem = std::ptrdiff_t(mem);
   for (size_t i = 0; i < VCALLOC_POOL_COUNT; i++) {
     controls_[i] = reinterpret_cast<ControlHeader *>(control_mem);
@@ -48,7 +47,7 @@ void *vcalloc::Malloc(size_t size) {
   size_t ctl_id = GetControlIDByTID(tid);
   controls_[ctl_id]->lock_.lock();
   BlockHeader *block = controls_[ctl_id]->LocateFreeBlock(adjust);
-  void* ptr = controls_[ctl_id]->BlockPrepareUsed(block, tid, adjust);
+  void *ptr = controls_[ctl_id]->BlockPrepareUsed(block, tid, adjust);
   controls_[ctl_id]->lock_.unlock();
   return ptr;
 #else
@@ -66,11 +65,16 @@ void vcalloc::Free(void *ptr) {
   assert(!block->IsFree() && "block already marked as free");
 
   block->MarkAsFree();
-  std::cout << block << std::endl;
   size_t ctl_id = GetControlIDByBlock(block);
+#if defined(VCALLOC_MULTI_THREAD)
+  controls_[ctl_id]->lock_.lock();
+#endif
   block = controls_[ctl_id]->MergePrevBlock(block);
   block = controls_[ctl_id]->MergeNextBlock(block);
   controls_[ctl_id]->InsertBlock(block);
+#if defined(VCALLOC_MULTI_THREAD)
+  controls_[ctl_id]->lock_.unlock();
+#endif
 }
 
 #define vcalloc_insist(x)                                                      \

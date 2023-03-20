@@ -14,7 +14,7 @@ struct ControlHeader;
 struct BlockHeader;
 
 #define VCALLOC
-#define VCALLOC_DEBUG
+// #define VCALLOC_DEBUG
 
 #define VCALLOC_MEM_SIZE 100 * 1024 * 1024
 #if defined(VCALLOC_MULTI_THREAD)
