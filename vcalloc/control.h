@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <cstdio>
+#include <mutex>
 
 static void MappingInsert(size_t size, int *fli, int *sli) {
   int fl, sl;
@@ -35,6 +36,10 @@ static void MappingSearch(size_t size, int *fli, int *sli) {
 typedef struct ControlHeader {
   // Empty lists point at this block to indicate they are free
   BlockHeader block_null_;
+
+#if defined(VCALLOC_MULTI_THREAD)
+  std::mutex lock_;
+#endif
 
   // Statistic
 #if defined(VCALLOC_STATISTIC)
@@ -218,7 +223,7 @@ typedef struct ControlHeader {
     return block->ToPtr();
   }
 
-#if defined (VCALLOC_MULTI_THREAD)
+#if defined(VCALLOC_MULTI_THREAD)
   void *BlockPrepareUsed(BlockHeader *block, std::thread::id tid, size_t size) {
     if (!block) {
       return 0;

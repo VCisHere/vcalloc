@@ -43,12 +43,16 @@ vcalloc::vcalloc(size_t size) {
 
 void *vcalloc::Malloc(size_t size) {
   const size_t adjust = AdjustRequestSize(size);
+#if defined(VCALLOC_MULTI_THREAD)
   std::thread::id tid = std::this_thread::get_id();
   size_t ctl_id = GetControlIDByTID(tid);
+  controls_[ctl_id]->lock_.lock();
   BlockHeader *block = controls_[ctl_id]->LocateFreeBlock(adjust);
-#if defined(VCALLOC_MULTI_THREAD)
-  return controls_[ctl_id]->BlockPrepareUsed(block, tid, adjust);
+  void* ptr = controls_[ctl_id]->BlockPrepareUsed(block, tid, adjust);
+  controls_[ctl_id]->lock_.unlock();
+  return ptr;
 #else
+  BlockHeader *block = controls_[0]->LocateFreeBlock(adjust);
   return controls_[ctl_id]->BlockPrepareUsed(block, adjust);
 #endif
 }
