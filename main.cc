@@ -6,37 +6,20 @@
 #include <memory>
 #include <random>
 #include <stdio.h>
+#include <thread>
 
 size_t static random_size() {
   static std::random_device dev;
   static std::mt19937 rng(dev());
-  // static std::uniform_int_distribution<std::mt19937::result_type> dist(1024,
-  // 8 * 1024);
+  // static std::uniform_int_distribution<std::mt19937::result_type> dist(
+  //     1024, 8 * 1024);
   static std::uniform_int_distribution<std::mt19937::result_type> dist(100,
-                                                                       400);
+                                                                       500);
   return dist(rng);
 }
 
-// void test_new_delete() {
-//   for (int k = 0; k < 1000000; k++) {
-//     int * ptr = new int;
-//     *ptr = 10;
-//     // std::cout << ptr << " " << *ptr << std::endl;
-//     delete ptr;
-
-//     int * ptrArr = new int[5];
-//     for (int i = 0; i < 5; i++) {
-//       ptrArr[i] = i + 1;
-//     }
-//     // for (int i = 0; i < 5; i++) {
-//     //   std::cout << ptrArr + i << " " << ptrArr[i] << std::endl;
-//     // }
-//     delete [] ptrArr;
-//   }
-// }
-
 void test_new_delete() {
-  for (int k = 0; k < 10000000; k++) {
+  for (int k = 0; k < 1000000; k++) {
     int *ptr = new int[random_size()];
     delete[] ptr;
   }
@@ -99,6 +82,13 @@ void test_reuse() {
   delete b;
 }
 
+void test_multi_thread() {
+  for (int i = 0; i < 10000; i++) {
+    std::thread t1([] { test_reuse(); });
+    t1.join();
+  }
+}
+
 int main() {
   using std::chrono::duration;
   using std::chrono::duration_cast;
@@ -107,15 +97,11 @@ int main() {
   using std::chrono::milliseconds;
   using std::chrono::nanoseconds;
 
-  // std::cout << sizeof(size_t) << std::endl; // 8
-  // std::cout << sizeof(int) << std::endl;    // 4
-  // std::cout << sizeof(void*) << std::endl;  // 8
-  // std::cout << sizeof(unsigned int) << std::endl; // 4
-
   auto t1 = high_resolution_clock::now();
-  // test_new_delete();
-  test_write_read();
+  test_new_delete();
+  // test_write_read();
   // test_reuse();
+  // test_multi_thread();
   auto t2 = high_resolution_clock::now();
   auto t = duration_cast<microseconds>(t2 - t1);
   std::cout << t.count() << "us\n";

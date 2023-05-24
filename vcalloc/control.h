@@ -1,13 +1,13 @@
 #pragma once
 
-#define VCALLOC_STATISTIC
-
 #include "vcalloc/block.h"
 #include "vcalloc/common.h"
 
 #include <assert.h>
 #include <cstdio>
+#include <limits>
 #include <mutex>
+#include <pthread.h>
 
 static void MappingInsert(size_t size, int *fli, int *sli) {
   int fl, sl;
@@ -33,13 +33,13 @@ static void MappingSearch(size_t size, int *fli, int *sli) {
   MappingInsert(size, fli, sli);
 }
 
-typedef struct ControlHeader {
-  // Empty lists point at this block to indicate they are free
-  BlockHeader block_null_;
+const size_t NULL_OFFSET = std::numeric_limits<size_t>::max();
 
-#if defined(VCALLOC_MULTI_THREAD)
-  std::mutex lock_;
-#endif
+typedef struct ControlHeader {
+  pthread_mutex_t mtx_;
+  pthread_cond_t cond_;
+
+  pthread_mutex_t lock_;
 
   // Statistic
 #if defined(VCALLOC_STATISTIC)
@@ -52,16 +52,29 @@ typedef struct ControlHeader {
   unsigned int sl_bitmap_[kFLIndexCount];
 
   // Head of free lists
-  BlockHeader *blocks_[kFLIndexCount][kSLIndexCount];
+  size_t blocks_offset_[kFLIndexCount][kSLIndexCount];
 
   void Init() {
-    block_null_.next_free_ = &block_null_;
-    block_null_.prev_free_ = &block_null_;
+    pthread_mutexattr_t mutex_attr;
+    pthread_mutexattr_init(&mutex_attr);
+    pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutex_init(&mtx_, &mutex_attr);
+
+    pthread_condattr_t cond_attr;
+    pthread_condattr_init(&cond_attr);
+    pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
+    pthread_cond_init(&cond_, &cond_attr);
+
+    pthread_mutexattr_t lock_attr;
+    pthread_mutexattr_init(&lock_attr);
+    pthread_mutexattr_setpshared(&lock_attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutex_init(&lock_, &lock_attr);
+
     fl_bitmap_ = 0;
     for (int i = 0; i < kFLIndexCount; i++) {
       sl_bitmap_[i] = 0;
       for (int j = 0; j < kSLIndexCount; j++) {
-        blocks_[i][j] = &block_null_;
+        blocks_offset_[i][j] = NULL_OFFSET;
       }
     }
   }
@@ -113,16 +126,31 @@ typedef struct ControlHeader {
 #endif
   }
 
+  BlockHeader* ApplyBlockOffset(size_t offset) {
+    if (offset == NULL_OFFSET) {
+      return nullptr;
+    }
+    return reinterpret_cast<BlockHeader*>(std::ptrdiff_t(this) + sizeof(ControlHeader) + offset);
+  }
+
+  size_t GetBlockOffset(BlockHeader *block) {
+    if (!block) {
+      return NULL_OFFSET;
+    }
+    return (size_t)(std::ptrdiff_t(block) - std::ptrdiff_t(this) - sizeof(ControlHeader));
+  }
+
   // Insert a given block into the free list
   void InsertBlock(BlockHeader *block) {
     int fl, sl;
     MappingInsert(block->Size(), &fl, &sl);
-    BlockHeader *current = blocks_[fl][sl];
-    assert(current && "free list cannot have a null entry");
+    BlockHeader *current = ApplyBlockOffset(blocks_offset_[fl][sl]);
     assert(block && "cannot insert a null entry into the free list");
-    block->next_free_ = current;
-    block->prev_free_ = &block_null_;
-    current->prev_free_ = block;
+    block->next_free_ = GetBlockOffset(current);
+    block->prev_free_ = NULL_OFFSET;
+    if (current) {
+      current->prev_free_ = GetBlockOffset(block);
+    }
 
     assert(block->ToPtr() == AlignPtr(block->ToPtr()) &&
            "block not aligned properly");
@@ -135,7 +163,7 @@ typedef struct ControlHeader {
     ** Insert the new block at the head of the list, and mark the first-
     ** and second-level bitmaps appropriately.
     */
-    blocks_[fl][sl] = block;
+    blocks_offset_[fl][sl] = GetBlockOffset(block);
     fl_bitmap_ |= (1U << fl);
     sl_bitmap_[fl] |= (1U << sl);
   }
@@ -165,7 +193,7 @@ typedef struct ControlHeader {
     *sli = sl;
 
     // Return the first block in the free list
-    return blocks_[fl][sl];
+    return ApplyBlockOffset(blocks_offset_[fl][sl]);
   }
 
   BlockHeader *LocateFreeBlock(size_t size) {
@@ -186,19 +214,21 @@ typedef struct ControlHeader {
 
   // Remove a free block from the free list
   void RemoveFreeBlock(BlockHeader *block, int fl, int sl) {
-    BlockHeader *prev = block->prev_free_;
-    BlockHeader *next = block->next_free_;
-    assert(prev && "prev_free field can not be null");
-    assert(next && "next_free field can not be null");
-    next->prev_free_ = prev;
-    prev->next_free_ = next;
+    BlockHeader *prev = ApplyBlockOffset(block->prev_free_);
+    BlockHeader *next = ApplyBlockOffset(block->next_free_);
+    if (next) {
+      next->prev_free_ = GetBlockOffset(prev);
+    }
+    if (prev) {
+      prev->next_free_ = GetBlockOffset(next);
+    }
 
     // If this block is the head of the free list, set new head
-    if (blocks_[fl][sl] == block) {
-      blocks_[fl][sl] = next;
+    if (ApplyBlockOffset(blocks_offset_[fl][sl]) == block) {
+      blocks_offset_[fl][sl] = GetBlockOffset(next);
 
       // If the new head is null, clear the bitmap
-      if (next == &block_null_) {
+      if (GetBlockOffset(next) == NULL_OFFSET) {
         sl_bitmap_[fl] &= ~(1U << sl);
 
         // If the second bitmap is now empty, clear the fl bitmap
@@ -222,19 +252,6 @@ typedef struct ControlHeader {
     block->MarkAsUsed();
     return block->ToPtr();
   }
-
-#if defined(VCALLOC_MULTI_THREAD)
-  void *BlockPrepareUsed(BlockHeader *block, std::thread::id tid, size_t size) {
-    if (!block) {
-      return 0;
-    }
-    assert(size && "size must be non-zero");
-    BlockTrimFree(block, size);
-    block->MarkAsUsed();
-    block->tid_ = tid;
-    return block->ToPtr();
-  }
-#endif
 
   // Trim any trailing block space off the end of a block, return to pool
   void BlockTrimFree(BlockHeader *block, size_t size) {

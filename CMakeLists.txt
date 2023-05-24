@@ -17,7 +17,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 project(vcalloc-test C CXX)
 
-add_compile_definitions(VCALLOC_MULTI_THREAD)
+add_compile_definitions(VCALLOC)
+add_compile_definitions(VCALLOC_STATISTIC)
 
 add_executable(vcalloc-test
     "./vcalloc/vcalloc.cc"
@@ -29,6 +30,6 @@ target_include_directories(vcalloc-test
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# target_link_libraries(misc-test
-#         pthread
-# )
+target_link_libraries(vcalloc-test
+        pthread
+)
